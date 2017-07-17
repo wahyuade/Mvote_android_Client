@@ -1,0 +1,19 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Customize your theme here. -->
+    </style>
+    <style name="ButtonHitam" parent="Theme.AppCompat.Light">
+        <item name="colorControlHighlight">#1565C0</item>
+        <item name="colorButtonNormal">#0D47A1</item>
+    </style>
+    <style name="ButtonMerah" parent="Theme.AppCompat.Light">
+        <item name="colorControlHighlight">#FF4081</item>
+        <item name="colorButtonNormal">#F50057</item>
+    </style>
+    <style name="ButtonBiru" parent="Theme.AppCompat.Light">
+        <item name="colorControlHighlight">#64B5F6</item>
+        <item name="colorButtonNormal">#1976D2</item>
+    </style>
+</resources>

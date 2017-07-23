@@ -8,10 +8,13 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
+
 import java.util.ArrayList;
 
 import client_android.m_vote.R;
 import client_android.m_vote.model.CalonModel;
+import client_android.m_vote.service.ApiServiceAdmin;
 
 /**
  * Created by wahyuade on 16/07/17.
@@ -58,6 +61,7 @@ public class ListCalonGridAdapter extends BaseAdapter{
 
             nama_calon.setText(data_calon.get(i).getNama());
             nomor_nomor.setText(data_calon.get(i).getId());
+            Glide.with(activity).load(ApiServiceAdmin.BASE_URL+"/calon/"+data_calon.get(i).getFoto()).into(foto_calon);
         } else {
             itemView = (View) view;
         }

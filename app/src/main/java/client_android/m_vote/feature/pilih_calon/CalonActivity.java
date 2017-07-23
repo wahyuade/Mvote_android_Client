@@ -15,6 +15,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
+
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -110,6 +112,7 @@ public class CalonActivity extends Activity {
                                 TextView visi_calon = (TextView) detail_calon.findViewById(R.id.visi_calon);
                                 TextView misi_calon = (TextView) detail_calon.findViewById(R.id.misi_calon);
                                 ImageView foto_calon = (ImageView) detail_calon.findViewById(R.id.foto_calon);
+                                Glide.with(CalonActivity.this).load(ApiServiceAdmin.BASE_URL+"/calon/"+response.body().get(i).getFoto()).into(foto_calon);
                                 Button batal = (Button)detail_calon.findViewById(R.id.batal);
                                 Button vote = (Button)detail_calon.findViewById(R.id.vote);
 
@@ -168,7 +171,7 @@ public class CalonActivity extends Activity {
 
                                                                 @Override
                                                                 public void onFailure(Call<DefaultModel> call, Throwable t) {
-                                                                    Toast.makeText(CalonActivity.this, "sek error bro", Toast.LENGTH_SHORT).show();
+                                                                    Toast.makeText(CalonActivity.this, "Terjadi kesalahan", Toast.LENGTH_SHORT).show();
                                                                 }
                                                             });
                                                         }else{

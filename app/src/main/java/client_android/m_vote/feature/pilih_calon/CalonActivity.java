@@ -6,24 +6,27 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 
 import client_android.m_vote.R;
 import client_android.m_vote.feature.LoginActivity;
 import client_android.m_vote.model.CalonModel;
+import client_android.m_vote.model.ChallangeModel;
 import client_android.m_vote.model.DefaultModel;
-import client_android.m_vote.service.ApiService;
+import client_android.m_vote.service.ApiServiceAdmin;
+import client_android.m_vote.library.BCrypt;
+import client_android.m_vote.service.SqliteDatabaseService;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
 import retrofit2.Call;
@@ -31,9 +34,17 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class CalonActivity extends Activity {
-    String local;
+    String value_n;
     GridView list_calon;
     ListCalonGridAdapter adapter;
+    String nrp;
+    String h;
+    String id_calon;
+
+    BigInteger x;
+    BigInteger r;
+    BigInteger s;
+    BigInteger n;
 
     @Override
     public void onBackPressed() {
@@ -52,7 +63,7 @@ public class CalonActivity extends Activity {
         Thread thread = new Thread(){
             public void run() {
                 try{
-                    sleep(300000);
+                    sleep(180000);
                 }catch (InterruptedException e) {
                     e.printStackTrace();
                 }finally{
@@ -65,15 +76,27 @@ public class CalonActivity extends Activity {
 
         list_calon = (GridView)findViewById(R.id.list_calon);
 
-        local = getIntent().getStringExtra("local");
+        value_n = getIntent().getStringExtra("value_n");
 
-        ApiService.service_get.getListCalon(local).enqueue(new Callback<ArrayList<CalonModel>>() {
+        ApiServiceAdmin.service_get.getListCalon(value_n).enqueue(new Callback<ArrayList<CalonModel>>() {
             @Override
             public void onResponse(Call<ArrayList<CalonModel>> call, final Response<ArrayList<CalonModel>> response) {
                 if(response.isSuccessful()){
                     loading.dismiss();
                     if(response.body() != null){
-                        adapter = new ListCalonGridAdapter(response.body(),CalonActivity.this, local);
+                        SqliteDatabaseService db = new SqliteDatabaseService(CalonActivity.this);
+
+                        SecureRandom ran = new SecureRandom();
+                        r = new BigInteger(498, 100, ran);
+
+                        s = new BigInteger(db.getKeyPrivat());
+                        n = new BigInteger(db.getVerifiedData().getData().getN());
+                        x = (r.multiply(r)).mod(n);
+                        nrp = db.getKeyNrp();
+
+                        db.close();
+
+                        adapter = new ListCalonGridAdapter(response.body(),CalonActivity.this, value_n);
                         list_calon.setAdapter(adapter);
 
                         list_calon.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -95,7 +118,6 @@ public class CalonActivity extends Activity {
                                 visi_calon.setText(response.body().get(i).getVisi());
                                 misi_calon.setText(response.body().get(i).getMisi());
 
-                                foto_calon.setImageResource(adapter.presiden[i]);
 
                                 batal.setOnClickListener(new View.OnClickListener() {
                                     @Override
@@ -109,21 +131,55 @@ public class CalonActivity extends Activity {
                                         AlertDialog.Builder vote_calon = new AlertDialog.Builder(CalonActivity.this);
                                         vote_calon.setTitle("Perhatian");
                                         vote_calon.setMessage("Apakah Anda yakin untuk memilih "+response.body().get(i).getNama()+" ?");
-                                        final String id_calon = response.body().get(i).getId();
+                                        id_calon = response.body().get(i).getId();
                                         vote_calon.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                                             @Override
                                             public void onClick(DialogInterface dialogInterface, int i) {
-                                                ApiService.service_post.postVote(RequestBody.create(MultipartBody.FORM, local), RequestBody.create(MultipartBody.FORM, id_calon)).enqueue(new Callback<DefaultModel>() {
+                                                loading.show();
+                                                //Mendapatkan nilai challange
+                                                ApiServiceAdmin.service_post.postCheck_m(RequestBody.create(MultipartBody.FORM, value_n), RequestBody.create(MultipartBody.FORM, x.toString()), RequestBody.create(MultipartBody.FORM, BCrypt.hashpw(id_calon, BCrypt.gensalt()))).enqueue(new Callback<ChallangeModel>() {
                                                     @Override
-                                                    public void onResponse(Call<DefaultModel> call, Response<DefaultModel> response) {
-                                                        Toast.makeText(CalonActivity.this, response.body().getMessage(), Toast.LENGTH_SHORT).show();
-                                                        Intent login_activity = new Intent(CalonActivity.this, LoginActivity.class);
-                                                        CalonActivity.this.startActivity(login_activity);
-                                                        CalonActivity.this.finish();
+                                                    public void onResponse(Call<ChallangeModel> call, Response<ChallangeModel> response) {
+                                                        if(response.body().isSuccess()){
+                                                            BigInteger y = r.multiply((s).pow(response.body().getC())).mod(n);
+
+                                                            Log.d("x", x.toString());
+                                                            Log.d("y", y.toString());
+                                                            h = BCrypt.hashpw(id_calon, BCrypt.gensalt());
+                                                            Log.d("h", h);
+                                                            Log.d("c", Integer.toString(response.body().getC()));
+                                                            Log.d("s", s.toString());
+                                                            Log.d("n", n.toString());
+
+                                                            ApiServiceAdmin.service_post.postVoteValidate(
+                                                                    RequestBody.create(MultipartBody.FORM, nrp),
+                                                                    RequestBody.create(MultipartBody.FORM, y.toString()),
+                                                                    RequestBody.create(MultipartBody.FORM, h),
+                                                                    RequestBody.create(MultipartBody.FORM, Integer.toString(response.body().getC()))).enqueue(new Callback<DefaultModel>() {
+                                                                @Override
+                                                                public void onResponse(Call<DefaultModel> call, Response<DefaultModel> response) {
+                                                                    detail_calon.dismiss();
+                                                                    Toast.makeText(CalonActivity.this, response.body().getMessage(), Toast.LENGTH_SHORT).show();
+                                                                    Intent login_activity = new Intent(CalonActivity.this, LoginActivity.class);
+                                                                    CalonActivity.this.startActivity(login_activity);
+                                                                    CalonActivity.this.finish();
+                                                                    loading.dismiss();
+                                                                }
+
+                                                                @Override
+                                                                public void onFailure(Call<DefaultModel> call, Throwable t) {
+                                                                    Toast.makeText(CalonActivity.this, "sek error bro", Toast.LENGTH_SHORT).show();
+                                                                }
+                                                            });
+                                                        }else{
+                                                            loading.dismiss();
+                                                            Toast.makeText(CalonActivity.this, response.body().getMessage(), Toast.LENGTH_SHORT).show();
+                                                        }
+
                                                     }
 
                                                     @Override
-                                                    public void onFailure(Call<DefaultModel> call, Throwable t) {
+                                                    public void onFailure(Call<ChallangeModel> call, Throwable t) {
                                                         Toast.makeText(CalonActivity.this, "Mohon maaf terjadi gangguan jaringan dengan device Anda", Toast.LENGTH_SHORT).show();
                                                     }
                                                 });
@@ -155,3 +211,4 @@ public class CalonActivity extends Activity {
 
     }
 }
+

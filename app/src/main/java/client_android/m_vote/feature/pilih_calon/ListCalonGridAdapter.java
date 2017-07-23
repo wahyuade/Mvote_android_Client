@@ -22,7 +22,6 @@ public class ListCalonGridAdapter extends BaseAdapter{
     Activity activity;
     String local;
 
-    int[] presiden = {R.drawable.jokowi, R.drawable.prabowo};
 
     public ListCalonGridAdapter(ArrayList<CalonModel> data_calon, Activity activity, String local) {
         this.data_calon = data_calon;
@@ -59,7 +58,6 @@ public class ListCalonGridAdapter extends BaseAdapter{
 
             nama_calon.setText(data_calon.get(i).getNama());
             nomor_nomor.setText(data_calon.get(i).getId());
-            foto_calon.setImageResource(presiden[i]);
         } else {
             itemView = (View) view;
         }

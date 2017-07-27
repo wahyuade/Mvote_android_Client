@@ -23,12 +23,11 @@
             android:background="#fff"
             android:layout_gravity="center"
             android:padding="5dp"
-            app:cardCornerRadius="5dp"
             android:layout_height="wrap_content">
             <LinearLayout
                 android:layout_width="match_parent"
                 android:orientation="horizontal"
-                android:layout_margin="5dp"
+                android:padding="7dp"
                 android:layout_height="wrap_content">
                 <EditText
                     android:layout_width="match_parent"

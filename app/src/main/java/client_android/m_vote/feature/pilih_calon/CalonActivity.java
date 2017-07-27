@@ -16,6 +16,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import org.java_websocket.WebSocket;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
@@ -26,14 +30,18 @@ import client_android.m_vote.feature.LoginActivity;
 import client_android.m_vote.model.CalonModel;
 import client_android.m_vote.model.ChallangeModel;
 import client_android.m_vote.model.DefaultModel;
+import client_android.m_vote.model.DeviceModel;
 import client_android.m_vote.service.ApiServiceAdmin;
 import client_android.m_vote.library.BCrypt;
+import client_android.m_vote.service.GPSTracker;
 import client_android.m_vote.service.SqliteDatabaseService;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import ua.naiksoftware.stomp.Stomp;
+import ua.naiksoftware.stomp.client.StompClient;
 
 public class CalonActivity extends Activity {
     String value_n;
@@ -42,11 +50,17 @@ public class CalonActivity extends Activity {
     String nrp;
     String h;
     String id_calon;
+    String uuid;
 
     BigInteger x;
     BigInteger r;
     BigInteger s;
     BigInteger n;
+
+    GPSTracker gps;
+    private StompClient deviceClient;
+    double latitude, longitude;
+    private Gson JsonParser = new GsonBuilder().create();
 
     @Override
     public void onBackPressed() {
@@ -92,6 +106,7 @@ public class CalonActivity extends Activity {
                         r = new BigInteger(498, 100, ran);
 
                         s = new BigInteger(db.getKeyPrivat());
+                        uuid = db.getUUID();
                         n = new BigInteger(db.getVerifiedData().getData().getN());
                         x = (r.multiply(r)).mod(n);
                         nrp = db.getKeyNrp();
@@ -162,6 +177,23 @@ public class CalonActivity extends Activity {
                                                                 @Override
                                                                 public void onResponse(Call<DefaultModel> call, Response<DefaultModel> response) {
                                                                     detail_calon.dismiss();
+
+                                                                    deviceClient = Stomp.over(WebSocket.class, ApiServiceAdmin.SOCKET_URL+"/device/websocket");
+                                                                    deviceClient.connect();
+                                                                    gps = new GPSTracker(CalonActivity.this);
+
+                                                                    if(gps.canGetLocation()){
+                                                                        latitude = gps.getLatitude();
+                                                                        longitude = gps.getLongitude();
+                                                                    }
+
+                                                                    DeviceModel deviceModel = new DeviceModel();
+                                                                    deviceModel.setUuid(uuid);
+                                                                    deviceModel.setStatus("3");
+                                                                    deviceModel.setLatitude(latitude);
+                                                                    deviceModel.setLongitude(longitude);
+                                                                    deviceClient.send("/client/device_information",JsonParser.toJson(deviceModel)).subscribe();
+
                                                                     Toast.makeText(CalonActivity.this, response.body().getMessage(), Toast.LENGTH_SHORT).show();
                                                                     Intent login_activity = new Intent(CalonActivity.this, LoginActivity.class);
                                                                     CalonActivity.this.startActivity(login_activity);

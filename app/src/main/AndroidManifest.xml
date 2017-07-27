@@ -4,6 +4,8 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <application
         android:allowBackup="true"
@@ -21,7 +23,8 @@
         </activity>
         <activity android:name=".feature.LoginActivity" />
         <activity android:name=".feature.pilih_calon.CalonActivity" />
-        <activity android:name=".feature.VerifyActivity"></activity>
+        <activity android:name=".feature.VerifyActivity" />
+        <activity android:name=".feature.Test"></activity>
     </application>
 
 </manifest>

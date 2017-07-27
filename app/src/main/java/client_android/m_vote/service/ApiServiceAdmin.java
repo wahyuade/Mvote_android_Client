@@ -21,7 +21,8 @@ import retrofit2.http.Query;
  */
 
 public class ApiServiceAdmin {
-    public static String BASE_URL = "http://192.168.43.10:8080";
+    public static String BASE_URL = "http://mvotepenscom-over.cloud.revoluz.io:49528";
+    public static String SOCKET_URL = "ws://mvotepenscom-over.cloud.revoluz.io:49528";
 
     public static PostService service_post = new Retrofit.Builder()
             .baseUrl(BASE_URL)

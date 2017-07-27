@@ -2,30 +2,48 @@ package client_android.m_vote.feature;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.location.Location;
+import android.location.LocationListener;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import org.java_websocket.WebSocket;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
 
 import client_android.m_vote.R;
 import client_android.m_vote.feature.pilih_calon.CalonActivity;
+import client_android.m_vote.model.DeviceModel;
 import client_android.m_vote.model.LoginModel;
 import client_android.m_vote.service.ApiServiceAdmin;
+import client_android.m_vote.service.GPSTracker;
 import client_android.m_vote.service.SqliteDatabaseService;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import ua.naiksoftware.stomp.Stomp;
+import ua.naiksoftware.stomp.client.StompClient;
 
-public class LoginActivity extends Activity {
+public class LoginActivity extends Activity implements LocationListener {
     Button login_button;
     EditText nrp, token;
     BigInteger r;
+
+    GPSTracker gps;
+    private StompClient deviceClient;
+    double latitude, longitude;
+    private Gson JsonParser = new GsonBuilder().create();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,8 +78,22 @@ public class LoginActivity extends Activity {
                                 public void onResponse(Call<LoginModel> call, Response<LoginModel> response) {
                                     if(response.isSuccessful()){
                                         if(response.body().isSuccess()){
+                                            deviceClient = Stomp.over(WebSocket.class, ApiServiceAdmin.SOCKET_URL+"/device/websocket");
+                                            deviceClient.connect();
+                                            gps = new GPSTracker(LoginActivity.this);
+
+                                            if(gps.canGetLocation()){
+                                                latitude = gps.getLatitude();
+                                                longitude = gps.getLongitude();
+                                            }
+
+                                            DeviceModel deviceModel = new DeviceModel();
+                                            deviceModel.setUuid(db.getUUID());
+                                            deviceModel.setStatus("2");
+                                            deviceModel.setLatitude(latitude);
+                                            deviceModel.setLongitude(longitude);
+                                            deviceClient.send("/client/device_information",JsonParser.toJson(deviceModel)).subscribe();
                                             Toast.makeText(LoginActivity.this, response.body().getMessage(), Toast.LENGTH_SHORT).show();
-                                            db.saveRandGenerateX(String.valueOf(r));
                                             Intent lihat_pilihan_calon = new Intent(LoginActivity.this, CalonActivity.class);
                                             lihat_pilihan_calon.putExtra("value_n", db.getKeyN());
                                             LoginActivity.this.startActivity(lihat_pilihan_calon);
@@ -108,5 +140,26 @@ public class LoginActivity extends Activity {
                 }
             }
         });
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        Log.d("Lat", Double.toString(location.getLatitude()));
+        Log.d("Long", Double.toString(location.getLongitude()));
+    }
+
+    @Override
+    public void onStatusChanged(String s, int i, Bundle bundle) {
+
+    }
+
+    @Override
+    public void onProviderEnabled(String s) {
+
+    }
+
+    @Override
+    public void onProviderDisabled(String s) {
+
     }
 }

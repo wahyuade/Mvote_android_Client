@@ -108,7 +108,11 @@ public class CalonActivity extends Activity {
                         s = new BigInteger(db.getKeyPrivat());
                         uuid = db.getUUID();
                         n = new BigInteger(db.getVerifiedData().getData().getN());
+
+                        Log.d("Generate x pada : ", String.valueOf(System.nanoTime()));
                         x = (r.multiply(r)).mod(n);
+                        Log.d("Selesai generate x : ", String.valueOf(System.nanoTime()));
+
                         nrp = db.getKeyNrp();
 
                         db.close();
@@ -154,21 +158,28 @@ public class CalonActivity extends Activity {
                                             @Override
                                             public void onClick(DialogInterface dialogInterface, int i) {
                                                 loading.show();
+                                                Log.d("Generate h pada : ", String.valueOf(System.nanoTime()));
+                                                h = BCrypt.hashpw(id_calon, BCrypt.gensalt());
+                                                Log.d("Selesai generate h : ", String.valueOf(System.nanoTime()));
                                                 //Mendapatkan nilai challange
-                                                ApiServiceAdmin.service_post.postCheck_m(RequestBody.create(MultipartBody.FORM, value_n), RequestBody.create(MultipartBody.FORM, x.toString()), RequestBody.create(MultipartBody.FORM, BCrypt.hashpw(id_calon, BCrypt.gensalt()))).enqueue(new Callback<ChallangeModel>() {
+                                                Log.d("Pengiriman x, h : ", String.valueOf(System.nanoTime()));
+                                                ApiServiceAdmin.service_post.postCheck_m(RequestBody.create(MultipartBody.FORM, value_n), RequestBody.create(MultipartBody.FORM, x.toString()), RequestBody.create(MultipartBody.FORM, h)).enqueue(new Callback<ChallangeModel>() {
                                                     @Override
                                                     public void onResponse(Call<ChallangeModel> call, Response<ChallangeModel> response) {
                                                         if(response.body().isSuccess()){
+                                                            Log.d("Generate y pada : ", String.valueOf(System.nanoTime()));
                                                             BigInteger y = r.multiply((s).pow(response.body().getC())).mod(n);
+                                                            Log.d("Selesai generate y : ", String.valueOf(System.nanoTime()));
 
                                                             Log.d("x", x.toString());
                                                             Log.d("y", y.toString());
-                                                            h = BCrypt.hashpw(id_calon, BCrypt.gensalt());
+
                                                             Log.d("h", h);
                                                             Log.d("c", Integer.toString(response.body().getC()));
                                                             Log.d("s", s.toString());
                                                             Log.d("n", n.toString());
 
+                                                            Log.d("Pengiriman y,h,c : ", String.valueOf(System.nanoTime()));
                                                             ApiServiceAdmin.service_post.postVoteValidate(
                                                                     RequestBody.create(MultipartBody.FORM, nrp),
                                                                     RequestBody.create(MultipartBody.FORM, y.toString()),
